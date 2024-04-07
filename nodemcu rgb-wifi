@@ -1,0 +1,72 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+const char* ssid = "NodeMCU";
+const char* password = "password";
+
+ESP8266WebServer server(80);
+
+// Pins for RGB LED
+const int redPin = D1;
+const int greenPin = D2;
+const int bluePin = D3;
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize LED pins as outputs
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+
+  // Create Wi-Fi network
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, password);
+
+  IPAddress ip = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(ip);
+
+  // Configure web server routes
+  server.on("/", HTTP_GET, [](){
+    server.send(200, "text/html", "<h1>RGB LED Control</h1>"
+                                  "<input type='color' onchange='setColor(this.value)' id='colorPicker'>"
+                                  "<script>"
+                                  "function setColor(color) {"
+                                  "var xhr = new XMLHttpRequest();"
+                                  "xhr.open('GET', '/color?c=' + color.substring(1));"
+                                  "xhr.send();"
+                                  "}"
+                                  "</script>");
+  });
+
+  server.on("/color", HTTP_GET, [](){
+    if (server.args() > 0) {
+      String color = server.arg("c");
+      setColor(color);
+      server.send(200, "text/plain", "Color set to: " + color);
+    } else {
+      server.send(400, "text/plain", "Invalid request");
+    }
+  });
+
+  server.begin();
+  Serial.println("HTTP server started");
+}
+
+void loop() {
+  server.handleClient();
+}
+
+void setColor(String hexColor) {
+  // Convert HEX color to RGB components
+  long number = (long) strtol( &hexColor[0], NULL, 16);
+  int red = number >> 16;
+  int green = number >> 8 & 0xFF;
+  int blue = number & 0xFF;
+
+  // Set the LED color
+  analogWrite(redPin, red);
+  analogWrite(greenPin, green);
+  analogWrite(bluePin, blue);
+}
