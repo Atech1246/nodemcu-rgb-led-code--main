@@ -7,9 +7,9 @@ const char* password = "password";
 ESP8266WebServer server(80);
 
 // Pins for RGB LED
-const int redPin = D1;
+const int redPin = D3;
 const int greenPin = D2;
-const int bluePin = D3;
+const int bluePin = D1;
 
 void setup() {
   Serial.begin(115200);
@@ -29,15 +29,31 @@ void setup() {
 
   // Configure web server routes
   server.on("/", HTTP_GET, [](){
-    server.send(200, "text/html", "<h1>RGB LED Control</h1>"
+    server.send(200, "text/html", "<!DOCTYPE html>"
+                                  "<html>"
+                                  "<head>"
+                                  "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+                                  "<style>"
+                                  "body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #919098;}"
+                                  ".container { text-align: center; padding-top: 50px;}"
+                                  "input[type='color'] { width: 100px; height: 100px; border: none; outline: none;}"
+                                  "#heading {padding: 1rem; border-radius: 10%; background-color: #CFBCDF; border: 2px solid black}"
+                                  "</style>"
+                                  "</head>"
+                                  "<body>"
+                                  "<div class='container'>"
+                                  "<h1 id='heading'>RGB LED Control</h1>"
                                   "<input type='color' onchange='setColor(this.value)' id='colorPicker'>"
+                                  "</div>"
                                   "<script>"
                                   "function setColor(color) {"
                                   "var xhr = new XMLHttpRequest();"
                                   "xhr.open('GET', '/color?c=' + color.substring(1));"
                                   "xhr.send();"
                                   "}"
-                                  "</script>");
+                                  "</script>"
+                                  "</body>"
+                                  "</html>");
   });
 
   server.on("/color", HTTP_GET, [](){
@@ -61,7 +77,7 @@ void loop() {
 void setColor(String hexColor) {
   // Convert HEX color to RGB components
   long number = (long) strtol( &hexColor[0], NULL, 16);
-  int red = number >> 16;
+  int red = number >> 16 & 0xFF;
   int green = number >> 8 & 0xFF;
   int blue = number & 0xFF;
 
